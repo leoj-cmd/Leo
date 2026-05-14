@@ -914,7 +914,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+// ✅ OpenRouter API — 무료 모델 사용 (CORS 허용, Worker 불필요)
+// 키 발급: https://openrouter.ai → API Keys
+const OPENROUTER_KEY = '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'; // 
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const AI_MODEL = 'google/gemini-2.0-flash-exp:free'; // 무료 모델
 
 // DATE
 function updateDate() {
@@ -1077,11 +1081,16 @@ async function callGemini(type) {
   const needsSources = NEEDS_SOURCES.includes(type);
 
   try {
-    const res = await fetch(ANTHROPIC_URL, {
+    const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_KEY}`,
+        'HTTP-Referer': 'https://leo-ax8.pages.dev',
+        'X-Title': 'MY DESK Assistant'
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: AI_MODEL,
         max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -1089,7 +1098,7 @@ async function callGemini(type) {
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const rawText = data.content?.[0]?.text || '응답을 받지 못했습니다.';
+    const rawText = data.choices?.[0]?.message?.content || '응답을 받지 못했습니다.';
 
     let bodyText = rawText;
     let sources = [];
