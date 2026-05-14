@@ -914,11 +914,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ✅ OpenRouter API — 무료 모델 사용 (CORS 허용, Worker 불필요)
-// 키 발급: https://openrouter.ai → API Keys
-const OPENROUTER_KEY = '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'; // 
+// ====================================================
+// 🔑 API 설정 — OpenRouter 무료 모델 (:free 붙은 모델은 크레딧 불필요)
+// ====================================================
+const OPENROUTER_KEY = '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';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const AI_MODEL = 'google/gemini-2.0-flash-exp:free'; // 무료 모델
+const AI_MODEL = 'google/gemma-4-26b-a4b-it:free'; // ← 무료 모델 (:free 필수)
 
 // DATE
 function updateDate() {
@@ -1081,23 +1082,34 @@ async function callGemini(type) {
   const needsSources = NEEDS_SOURCES.includes(type);
 
   try {
-    const res = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_KEY}`,
-        'HTTP-Referer': 'https://leo-ax8.pages.dev',
-        'X-Title': 'MY DESK Assistant'
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        max_tokens: 3000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    let res;
+    try {
+      res = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENROUTER_KEY}`,
+          'X-Title': 'MY DESK Assistant'
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          max_tokens: 3000,
+          temperature: 0.7,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+    } catch (networkErr) {
+      throw new Error(`네트워크 연결 오류 — ${networkErr.message}`);
+    }
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      let errDetail = '';
+      try { const e = await res.json(); errDetail = e.error?.message || JSON.stringify(e); } catch(_) {}
+      throw new Error(`API 오류 ${res.status}: ${errDetail}`);
+    }
+
     const data = await res.json();
+    if (data.error) throw new Error(JSON.stringify(data.error));
     const rawText = data.choices?.[0]?.message?.content || '응답을 받지 못했습니다.';
 
     let bodyText = rawText;
