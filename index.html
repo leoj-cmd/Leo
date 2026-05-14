@@ -684,7 +684,27 @@
 
 <div class="header">
   <div class="logo">MY<span>DESK</span></div>
-  <div class="header-date" id="headerDate"></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="header-date" id="headerDate"></div>
+    <button onclick="document.getElementById('key-modal').style.display='flex'" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:var(--warm);font-family:'Space Mono',monospace;font-size:10px;padding:6px 12px;border-radius:3px;cursor:pointer;letter-spacing:0.05em" id="key-status-btn">🔑 API KEY</button>
+  </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div id="key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:32px;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px">API 키 설정</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+      OpenRouter 무료 키를 입력하세요. 키는 브라우저에만 저장되며 GitHub에 올라가지 않습니다.<br>
+      키 발급: <a href="https://openrouter.ai/settings/keys" target="_blank" style="color:var(--accent2)">openrouter.ai/settings/keys</a>
+    </div>
+    <input type="password" id="key-input-field" placeholder="sk-or-v1-..." style="width:100%;font-family:'Space Mono',monospace;font-size:13px;padding:12px 16px;border:1.5px solid var(--border);border-radius:4px;background:var(--paper);color:var(--ink);outline:none;margin-bottom:16px">
+    <div style="display:flex;gap:10px">
+      <button onclick="applyApiKey()" style="flex:1;background:var(--accent);color:white;border:none;padding:12px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;border-radius:4px;cursor:pointer">저장</button>
+      <button onclick="document.getElementById('key-modal').style.display='none'" style="background:transparent;border:1.5px solid var(--border);color:var(--ink);padding:12px 16px;font-family:'Space Mono',monospace;font-size:12px;border-radius:4px;cursor:pointer">닫기</button>
+    </div>
+    <div id="key-modal-status" style="margin-top:12px;font-size:12px;color:var(--muted);text-align:center"></div>
+  </div>
 </div>
 
 <div class="layout">
@@ -915,11 +935,18 @@
 
 <script>
 // ====================================================
-// 🔑 API 설정 — OpenRouter 무료 모델 (:free 붙은 모델은 크레딧 불필요)
+// 🔑 API 설정 — 키는 localStorage에서 읽음 (GitHub에 노출 안 됨)
 // ====================================================
-const OPENROUTER_KEY = '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';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const AI_MODEL = 'google/gemma-4-26b-a4b-it:free'; // ← 무료 모델 (:free 필수)
+const AI_MODEL = 'google/gemma-4-26b-a4b-it:free';
+
+function getApiKey() {
+  return localStorage.getItem('mydesk_openrouter_key') || '';
+}
+
+function saveApiKey(key) {
+  localStorage.setItem('mydesk_openrouter_key', key.trim());
+}
 
 // DATE
 function updateDate() {
@@ -1069,6 +1096,12 @@ async function callGemini(type) {
   const input = document.getElementById(`${type}-input`).value.trim();
   if (!input) { showToast('내용을 입력해 주세요.'); return; }
 
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    document.getElementById('key-modal').style.display = 'flex';
+    return;
+  }
+
   const outputEl = document.getElementById(`output-${type}`);
   const loaderEl = document.getElementById(`loader-${type}`);
   const actionsEl = document.getElementById(`actions-${type}`);
@@ -1088,7 +1121,7 @@ async function callGemini(type) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENROUTER_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'X-Title': 'MY DESK Assistant'
         },
         body: JSON.stringify({
@@ -1300,6 +1333,35 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
+
+function applyApiKey() {
+  const key = document.getElementById('key-input-field').value.trim();
+  if (!key.startsWith('sk-or-v1-')) {
+    document.getElementById('key-modal-status').innerHTML = '<span style="color:var(--accent)">올바른 OpenRouter 키 형식이 아닙니다 (sk-or-v1-...)</span>';
+    return;
+  }
+  saveApiKey(key);
+  document.getElementById('key-modal').style.display = 'none';
+  document.getElementById('key-status-btn').style.borderColor = '#4caf50';
+  document.getElementById('key-status-btn').style.color = '#4caf50';
+  document.getElementById('key-status-btn').textContent = '🔑 KEY 등록됨';
+  showToast('API 키가 저장되었습니다.');
+}
+
+// 로드 시 키 상태 반영
+window.addEventListener('load', () => {
+  const key = getApiKey();
+  if (key) {
+    document.getElementById('key-status-btn').style.color = '#4caf50';
+    document.getElementById('key-status-btn').textContent = '🔑 KEY 등록됨';
+    document.getElementById('key-input-field').value = key;
+  } else {
+    // 키 없으면 모달 자동 표시
+    setTimeout(() => {
+      document.getElementById('key-modal').style.display = 'flex';
+    }, 500);
+  }
+});
 
 // INIT
 renderLeave();
