@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MY DESK — 개인 업무 비서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Pretendard:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0c;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --warm: #c8b89a;
+    --accent: #c0392b;
+    --accent2: #2c5f8a;
+    --gold: #b8860b;
+    --muted: #7a7062;
+    --border: #d4cdc0;
+    --card: #faf7f2;
+    --shadow: rgba(15,14,12,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Pretendard', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    color: var(--paper);
+  }
+
+  .logo span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .header-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--warm);
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  /* LAYOUT */
+  .layout {
+    display: flex;
+    height: calc(100vh - 56px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    background: var(--ink);
+    padding: 24px 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid #222;
+  }
+
+  .sidebar-section {
+    padding: 0 16px;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 16px 16px 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    color: #888;
+    font-size: 13.5px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    position: relative;
+  }
+
+  .nav-item:hover { color: var(--paper); background: rgba(255,255,255,0.04); }
+  .nav-item.active {
+    color: var(--paper);
+    border-left-color: var(--accent);
+    background: rgba(192,57,43,0.12);
+  }
+
+  .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+
+  /* ANNUAL BADGE */
+  .annual-badge {
+    position: absolute;
+    right: 12px;
+    background: var(--accent);
+    color: white;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* PANEL */
+  .panel {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel.active { display: flex; }
+
+  .panel-header {
+    padding: 24px 32px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .panel-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* INPUT AREA */
+  .input-zone {
+    padding: 20px 32px;
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  textarea, input[type="text"] {
+    flex: 1;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 14px;
+    padding: 12px 16px;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+
+  textarea:focus, input[type="text"]:focus {
+    border-color: var(--accent2);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+    white-space: nowrap;
+    align-self: flex-end;
+  }
+
+  .btn-primary:hover { background: #a93226; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1.5px solid var(--border);
+    padding: 10px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+
+  /* OUTPUT */
+  .output-zone {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+
+  .output-box {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px 32px;
+    line-height: 1.8;
+    font-size: 14px;
+    color: var(--ink);
+    min-height: 80px;
+    white-space: pre-wrap;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .output-box.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 13px;
+    min-height: 200px;
+    font-style: italic;
+  }
+
+  .output-box h3 { font-family: 'DM Serif Display', serif; font-size: 18px; margin: 16px 0 8px; color: var(--accent2); }
+  .output-box h4 { font-size: 13px; font-weight: 600; margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold); }
+  .output-box p { margin-bottom: 10px; }
+  .output-box ul { margin: 8px 0 12px 20px; }
+  .output-box li { margin-bottom: 6px; }
+  .output-box strong { color: var(--accent); }
+
+  /* LOADER */
+  .loader {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .loader.active { display: flex; }
+
+  .loader-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .loader-dots span {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* COPY BTN */
+  .output-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  /* ===== ANNUAL LEAVE PANEL ===== */
+  .leave-panel { padding: 28px 32px; overflow-y: auto; flex: 1; }
+
+  .leave-summary {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .leave-big {
+    font-family: 'DM Serif Display', serif;
+    font-size: 64px;
+    line-height: 1;
+    color: white;
+  }
+
+  .leave-big span { font-size: 24px; color: var(--warm); }
+
+  .leave-info { flex: 1; }
+  .leave-info-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--warm);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .leave-info-value {
+    font-size: 14px;
+    color: var(--cream);
+    line-height: 1.6;
+  }
+
+  .leave-form {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .leave-form h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: var(--ink);
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; }
+
+  .form-group label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .form-group input, .form-group select {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent2); }
+
+  .leave-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid var(--border);
+    background: white;
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 4px;
+    transition: all 0.15s;
+    color: var(--muted);
+  }
+
+  .toggle-btn.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: white;
+  }
+
+  /* HISTORY */
+  .leave-history {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .history-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--cream);
+  }
+
+  .history-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+  }
+
+  .history-list { max-height: 280px; overflow-y: auto; }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--cream);
+    transition: background 0.1s;
+  }
+
+  .history-item:hover { background: var(--paper); }
+
+  .history-item:last-child { border-bottom: none; }
+
+  .history-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+  }
+
+  .history-note { font-size: 13px; color: var(--muted); }
+
+  .history-days {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .history-del {
+    background: none;
+    border: none;
+    color: var(--border);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    transition: color 0.15s;
+    margin-left: 12px;
+  }
+
+  .history-del:hover { color: var(--accent); }
+
+  .empty-history {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    border-left: 3px solid var(--accent);
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* MOBILE */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    background: var(--ink);
+    border-top: 2px solid var(--accent);
+    padding: 8px 0 env(safe-area-inset-bottom, 0);
+    z-index: 200;
+    justify-content: space-around;
+  }
+
+  .mob-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #666;
+    font-size: 18px;
+    transition: color 0.15s;
+    border: none;
+    background: none;
+    flex: 1;
+  }
+
+  .mob-btn.active { color: var(--accent); }
+  .mob-label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.05em; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .mobile-nav { display: flex; }
+    .main { height: calc(100vh - 56px - 60px); }
+    .panel-header { padding: 16px 20px 12px; }
+    .panel-title { font-size: 22px; }
+    .input-zone { padding: 14px 20px; }
+    .output-zone { padding: 20px; }
+    .leave-panel { padding: 20px; }
+    .leave-big { font-size: 48px; }
+    .form-row { flex-direction: column; gap: 12px; }
+    .leave-summary { gap: 20px; padding: 20px; }
+    .output-box { padding: 20px; }
+  }
+
+  /* MARKDOWN-LIKE RENDERING */
+  .md-h1 { font-family: 'DM Serif Display', serif; font-size: 22px; margin: 0 0 16px; color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  .md-h2 { font-family: 'DM Serif Display', serif; font-size: 17px; margin: 20px 0 10px; color: var(--accent2); }
+  .md-h3 { font-size: 14px; font-weight: 600; margin: 14px 0 8px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
+  .md-bullet { margin: 4px 0 4px 16px; padding-left: 12px; border-left: 2px solid var(--border); }
+  .md-bold { font-weight: 600; color: var(--accent); }
+
+  /* REPORT specific */
+  .report-tag {
+    display: inline-block;
+    background: var(--accent2);
+    color: white;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* SOURCES BLOCK */
+  .sources-block {
+    margin-top: 28px;
+    border-top: 2px solid var(--ink);
+    padding-top: 20px;
+  }
+
+  .sources-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+
+  .sources-count {
+    margin-left: auto;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+
+  .src-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    background: var(--paper);
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .src-item:hover {
+    background: var(--cream);
+    border-color: var(--accent2);
+  }
+
+  .src-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    flex-shrink: 0;
+    margin-top: 2px;
+    min-width: 22px;
+  }
+
+  .src-content { flex: 1; min-width: 0; }
+
+  .src-link {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent2);
+    text-decoration: none;
+    word-break: break-word;
+    line-height: 1.4;
+    margin-bottom: 3px;
+  }
+
+  .src-link:hover { text-decoration: underline; color: var(--accent); }
+
+  .src-outlet {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+  }
+
+  .src-arrow {
+    font-size: 14px;
+    color: var(--muted);
+    text-decoration: none;
+    flex-shrink: 0;
+    padding: 2px;
+    transition: color 0.15s, transform 0.15s;
+    margin-top: 1px;
+  }
+
+  .src-arrow:hover { color: var(--accent2); transform: translate(1px, -1px); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">MY<span>DESK</span></div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-label">Intelligence</div>
+    <div class="nav-item active" data-panel="news" onclick="switchPanel('news')">
+      <span class="nav-icon">📰</span> 뉴스
+    </div>
+    <div class="nav-item" data-panel="paper" onclick="switchPanel('paper')">
+      <span class="nav-icon">🔬</span> 논문 분석
+    </div>
+    <div class="nav-item" data-panel="strategy" onclick="switchPanel('strategy')">
+      <span class="nav-icon">📊</span> 전략
+    </div>
+    <div class="sidebar-label">Documents</div>
+    <div class="nav-item" data-panel="report" onclick="switchPanel('report')">
+      <span class="nav-icon">📋</span> 보고서
+    </div>
+    <div class="nav-item" data-panel="mail" onclick="switchPanel('mail')">
+      <span class="nav-icon">✉️</span> 메일
+    </div>
+    <div class="nav-item" data-panel="plan" onclick="switchPanel('plan')">
+      <span class="nav-icon">💡</span> 기획
+    </div>
+    <div class="sidebar-label">Personal</div>
+    <div class="nav-item" data-panel="leave" onclick="switchPanel('leave')">
+      <span class="nav-icon">📅</span> 인사 · 연차
+      <span class="annual-badge" id="sidebarLeave">13.5</span>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- NEWS -->
+    <div class="panel active" id="panel-news">
+      <div class="panel-header">
+        <div class="panel-title">뉴스</div>
+        <div class="panel-desc">Reuters · AP · NYT · WSJ · BBC · Guardian · Al Jazeera · Bloomberg · FT · Nikkei Asia — 글로벌 주요 10개 매체 실시간 검색 요약</div>
+      </div>
+      <div class="input-zone">
+        <div class="input-row">
+          <textarea id="news-input" rows="2" placeholder="검색할 키워드를 입력하세요. 예: 미-중 무역 협상, AI 반도체, 연준 금리 결정 등"></textarea>
+          <button class="btn-primary" onclick="callGemini('news')">검색</button>
+        </div>
+      </div>
+      <div class="output-zone">
+        <div class="loader" id="loader-news"><div class="loader-dots"><span></span><span></span><span></span></div> 글로벌 매체 검색 중...</div>
+        <div class="output-box empty" id="output-news">키워드를 입력하고 검색하면 주요 매체의 최신 뉴스를 요약해 드립니다.</div>
+        <div class="output-actions" id="actions-news" style="display:none">
+          <button class="btn-secondary" onclick="copyOutput('news')">복사</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAPER -->
+    <div class="panel" id="panel-paper">
+      <div class="panel-header">
+        <div class="panel-title">논문 분석</div>
+        <div class="panel-desc">PubMed 중심 학술 데이터베이스 기반 최신 연구 동향 및 논문 요약</div>
+      </div>
+      <div class="input-zone">
+        <div class="input-row">
+          <textarea id="paper-input" rows="2" placeholder="연구 키워드를 입력하세요. 예: GLP-1 receptor agonist obesity, mRNA vaccine cancer immunotherapy 등"></textarea>
+          <button class="btn-primary" onclick="callGemini('paper')">분석</button>
+        </div>
+      </div>
+      <div class="output-zone">
+        <div class="loader" id="loader-paper"><div class="loader-dots"><span></span><span></span><span></span></div> 학술 데이터베이스 탐색 중...</div>
+        <div class="output-box empty" id="output-paper">키워드를 입력하면 관련 최신 논문과 연구 동향을 분석해 드립니다.</div>
+        <div class="output-actions" id="actions-paper" style="display:none">
+          <button class="btn-secondary" onclick="copyOutput('paper')">복사</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STRATEGY -->
+    <div class="panel" id="panel-strategy">
+      <div class="panel-header">
+        <div class="panel-title">전략</div>
+        <div class="panel-desc">시장 트렌드 분석 기반 전략적 인사이트 및 향후 전망 도출</div>
+      </div>
+      <div class="input-zone">
+        <div class="input-row">
+          <textarea id="strategy-input" rows="2" placeholder="분석할 키워드 또는 산업/시장을 입력하세요. 예: 국내 AI 스타트업 투자 트렌드, 전기차 배터리 시장 등"></textarea>
+          <button class="btn-primary" onclick="callGemini('strategy')">분석</button>
+        </div>
+      </div>
+      <div class="output-zone">
+        <div class="loader" id="loader-strategy"><div class="loader-dots"><span></span><span></span><span></span></div> 시장 트렌드 분석 중...</div>
+        <div class="output-box empty" id="output-strategy">키워드를 입력하면 전략적 인사이트와 기회 요인을 도출해 드립니다.</div>
+        <div class="output-actions" id="actions-strategy" style="display:none">
+          <button class="btn-secondary" onclick="copyOutput('strategy')">복사</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="panel" id="panel-report">
+      <div class="panel-header">
+        <div class="panel-title">보고서</div>
+        <div class="panel-desc">아이디어·메모를 전문적인 비즈니스 보고서 형식으로 변환</div>
+      </div>
+      <div class="input-zone">
+        <div class="input-row">
+          <textarea id="report-input" rows="3" placeholder="초안 또는 정리되지 않은 메모를 입력하세요. 있는 그대로 붙여넣어도 됩니다."></textarea>
+          <button class="btn-primary" onclick="callGemini('report')">작성</button>
+        </div>
+      </div>
+      <div class="output-zone">
+        <div class="loader" id="loader-report"><div class="loader-dots"><span></span><span></span><span></span></div> 보고서 작성 중...</div>
+        <div class="output-box empty" id="output-report">내용을 입력하면 전문적인 비즈니스 보고서로 재구성해 드립니다.</div>
+        <div class="output-actions" id="actions-report" style="display:none">
+          <button class="btn-secondary" onclick="copyOutput('report')">복사</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIL -->
+    <div class="panel" id="panel-mail">
+      <div class="panel-header">
+        <div class="panel-title">메일</div>
+        <div class="panel-desc">상황에 적합한 공식 비즈니스 메일 초안 작성</div>
+      </div>
+      <div class="input-zone">
+        <div class="input-row">
+          <textarea id="mail-input" rows="3" placeholder="메일 상황을 설명해 주세요. 예: 거래처에 납품 지연 사과 메일 / 신규 파트너십 제안 메일 / 내부 보고 요청 메일 등"></textarea>
+          <button class="btn-primary" onclick="callGemini('mail')">작성</button>
+        </div>
+      </div>
+      <div class="output-zone">
+        <div class="loader" id="loader-mail"><div class="loader-dots"><span></span><span></span><span></span></div> 메일 초안 작성 중...</div>
+        <div class="output-box empty" id="output-mail">메일 상황을 입력하면 격식 있는 비즈니스 메일을 작성해 드립니다.</div>
+        <div class="output-actions" id="actions-mail" style="display:none">
+          <button class="btn-secondary" onclick="copyOutput('mail')">복사</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAN -->
+    <div class="panel" id="panel-plan">
+      <div class="panel-header">
+        <div class="panel-title">기획</div>
+        <div class="panel-desc">창의적 아이디어를 구체적인 실행 계획으로 구조화</div>
+      </div>
+      <div class="input-zone">
+        <div class="input-row">
+          <textarea id="plan-input" rows="3" placeholder="기획 아이디어를 자유롭게 입력하세요. 예: 사내 독서 문화 확산 프로그램 / 신제품 런칭 이벤트 기획 등"></textarea>
+          <button class="btn-primary" onclick="callGemini('plan')">기획</button>
+        </div>
+      </div>
+      <div class="output-zone">
+        <div class="loader" id="loader-plan"><div class="loader-dots"><span></span><span></span><span></span></div> 기획안 작성 중...</div>
+        <div class="output-box empty" id="output-plan">아이디어를 입력하면 단계별 실행 계획과 기대 효과를 담은 기획안을 작성해 드립니다.</div>
+        <div class="output-actions" id="actions-plan" style="display:none">
+          <button class="btn-secondary" onclick="copyOutput('plan')">복사</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEAVE -->
+    <div class="panel" id="panel-leave">
+      <div class="leave-panel">
+        <!-- Summary -->
+        <div class="leave-summary">
+          <div>
+            <div class="leave-info-label">잔여 연차</div>
+            <div class="leave-big" id="leaveCount">13<span>.5일</span></div>
+          </div>
+          <div class="leave-info">
+            <div class="leave-info-label">연간 총 연차</div>
+            <div class="leave-info-value" id="leaveTotal">15일 / 사용: <span id="leaveUsed">1.5</span>일</div>
+            <div class="leave-info-label" style="margin-top:10px">올해 사용 현황</div>
+            <div class="leave-info-value" id="leaveStat">—</div>
+          </div>
+        </div>
+
+        <!-- Add Form -->
+        <div class="leave-form">
+          <h3>연차 신청</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>날짜</label>
+              <input type="date" id="leaveDate">
+            </div>
+            <div class="form-group">
+              <label>사유 (선택)</label>
+              <input type="text" id="leaveNote" placeholder="예: 개인 용무, 병원 방문 등">
+            </div>
+          </div>
+          <div class="leave-info-label" style="margin-bottom:8px">사용 일수</div>
+          <div class="leave-toggle">
+            <button class="toggle-btn active" id="toggle-half" onclick="selectLeaveDay(0.5)">반차 (0.5일)</button>
+            <button class="toggle-btn" id="toggle-full" onclick="selectLeaveDay(1)">연차 (1일)</button>
+          </div>
+          <button class="btn-primary" style="width:100%" onclick="addLeave()">연차 신청</button>
+        </div>
+
+        <!-- History -->
+        <div class="leave-history">
+          <div class="history-header">
+            <div class="history-title">사용 내역</div>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)" id="historyCount">0건</span>
+          </div>
+          <div class="history-list" id="leaveHistoryList">
+            <div class="empty-history">등록된 연차 내역이 없습니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <button class="mob-btn active" data-panel="news" onclick="switchPanel('news')">📰<span class="mob-label">뉴스</span></button>
+  <button class="mob-btn" data-panel="paper" onclick="switchPanel('paper')">🔬<span class="mob-label">논문</span></button>
+  <button class="mob-btn" data-panel="strategy" onclick="switchPanel('strategy')">📊<span class="mob-label">전략</span></button>
+  <button class="mob-btn" data-panel="report" onclick="switchPanel('report')">📋<span class="mob-label">보고서</span></button>
+  <button class="mob-btn" data-panel="mail" onclick="switchPanel('mail')">✉️<span class="mob-label">메일</span></button>
+  <button class="mob-btn" data-panel="plan" onclick="switchPanel('plan')">💡<span class="mob-label">기획</span></button>
+  <button class="mob-btn" data-panel="leave" onclick="switchPanel('leave')">📅<span class="mob-label">연차</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+// DATE
+function updateDate() {
+  const now = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('headerDate').innerHTML =
+    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]})<br>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  // Set default date for leave
+  const dateEl = document.getElementById('leaveDate');
+  if (dateEl && !dateEl.value) {
+    dateEl.value = now.toISOString().split('T')[0];
+  }
+}
+setInterval(updateDate, 60000);
+updateDate();
+
+// PANEL SWITCH
+function switchPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mob-btn').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.querySelectorAll(`[data-panel="${id}"]`).forEach(el => el.classList.add('active'));
+}
+
+// PROMPTS — types that need sources return JSON with body + sources[]
+// sources: [{title, outlet, url, year?}]
+const NEEDS_SOURCES = ['news', 'paper', 'strategy'];
+
+const PROMPTS = {
+  news: (q) => `당신은 글로벌 뉴스 에디터입니다. 다음 키워드와 관련된 최신 뉴스를 Reuters, Associated Press, The New York Times, The Wall Street Journal, BBC, The Guardian, Al Jazeera, Bloomberg, Financial Times, Nikkei Asia 등 주요 10개 글로벌 매체의 보도 관점에서 종합 분석해 주세요.
+
+키워드: "${q}"
+
+반드시 아래 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트는 절대 포함하지 마세요:
+{
+  "body": "## [키워드] 주요 뉴스 동향\\n\\n**핵심 요약**\\n• 요약1\\n• 요약2\\n• 요약3\\n\\n**매체별 주요 관점**\\n각 매체 관점 설명\\n\\n**향후 주목 포인트**\\n주목 사항 설명",
+  "sources": [
+    {"title": "기사 제목", "outlet": "매체명 (예: Reuters)", "url": "https://실제URL", "year": "2025"},
+    {"title": "기사 제목2", "outlet": "매체명", "url": "https://실제URL", "year": "2025"}
+  ]
+}
+
+sources의 url은 해당 매체의 실제 검색 URL 또는 관련 섹션 URL을 사용하세요. 예시:
+- Reuters: https://www.reuters.com/search/news?blob=키워드
+- BBC: https://www.bbc.com/news
+- Bloomberg: https://www.bloomberg.com
+- NYT: https://www.nytimes.com
+body는 한국어로, sources title도 한국어로 작성하세요.`,
+
+  paper: (q) => `당신은 의학·과학 문헌 전문 리뷰어입니다. 다음 키워드와 관련된 최신 학술 연구 동향을 PubMed 및 주요 학술 데이터베이스 기반으로 전문적으로 분석해 주세요.
+
+키워드: "${q}"
+
+반드시 아래 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트는 절대 포함하지 마세요:
+{
+  "body": "## [키워드] 학술 연구 동향\\n\\n**연구 현황 개요**\\n내용\\n\\n**주요 연구 트렌드**\\n• 트렌드1\\n• 트렌드2\\n\\n**임상적/산업적 시사점**\\n내용",
+  "sources": [
+    {"title": "논문 제목", "outlet": "저널명 · PMID: 12345678", "url": "https://pubmed.ncbi.nlm.nih.gov/12345678/", "year": "2024"},
+    {"title": "논문 제목2", "outlet": "저널명 · DOI", "url": "https://doi.org/실제DOI", "year": "2024"}
+  ]
+}
+
+sources의 url은 PubMed(https://pubmed.ncbi.nlm.nih.gov/PMID/) 또는 DOI 링크를 사용하세요. PMID가 확실하지 않으면 https://pubmed.ncbi.nlm.nih.gov/?term=키워드 형식으로 검색 URL을 사용하세요.
+body와 sources title은 한국어로 작성하세요.`,
+
+  report: (q) => `당신은 시니어 비즈니스 컨설턴트입니다. 다음의 초안/메모를 전문적인 비즈니스 보고서 형식으로 재구성해 주세요.
+
+입력 내용: "${q}"
+
+응답 형식 (마크다운, 한국어):
+## 보고서 제목
+
+**작성일**: [오늘 날짜]
+**문서 유형**: 업무 보고서
+
+---
+
+### 1. 개요 (Executive Summary)
+### 2. 배경 및 현황
+### 3. 주요 내용
+### 4. 시사점 및 제언
+### 5. 결론
+
+논리적이고 명확한 비즈니스 문체로 작성하세요. 한국어로 답변하세요.`,
+
+  mail: (q) => `당신은 기업 커뮤니케이션 전문가입니다. 다음 상황에 맞는 공식 비즈니스 이메일을 작성해 주세요.
+
+상황: "${q}"
+
+응답 형식 (한국어):
+**제목**: [이메일 제목]
+
+---
+
+[수신자 직함·성명] 귀중,
+
+[인사말 및 자기소개]
+[본문]
+[맺음말]
+
+감사합니다.
+[발신자 서명]
+
+---
+*추가 고려사항 메모*
+
+격식 있고 전문적인 비즈니스 언어로 작성하세요.`,
+
+  strategy: (q) => `당신은 전략 컨설팅 파트너입니다. 다음 키워드/산업/시장과 관련된 전략적 인사이트를 시장 트렌드와 데이터에 기반하여 도출해 주세요.
+
+분석 대상: "${q}"
+
+반드시 아래 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트는 절대 포함하지 마세요:
+{
+  "body": "## [분석 대상] 전략 인사이트\\n\\n**현황 진단**\\n내용\\n\\n**기회 요인 (Opportunities)**\\n• 기회1\\n• 기회2\\n\\n**위협 요인 (Threats)**\\n• 위협1\\n\\n**전략적 제언**\\n단기/중기/장기 전략\\n\\n**핵심 성공 요인 (KSF)**\\n내용\\n\\n**결론 및 우선순위**\\n내용",
+  "sources": [
+    {"title": "보고서/기사 제목", "outlet": "출처 기관명", "url": "https://실제URL", "year": "2025"},
+    {"title": "보고서/기사 제목2", "outlet": "출처 기관명", "url": "https://실제URL", "year": "2025"}
+  ]
+}
+
+sources는 McKinsey, Gartner, Statista, Bloomberg, 산업통상자원부, KOTRA 등 신뢰할 수 있는 기관의 실제 보고서나 기사 URL을 사용하세요.
+body와 sources title은 한국어로 작성하세요.`,
+
+  plan: (q) => `당신은 시니어 기획자입니다. 다음 아이디어를 바탕으로 구체적인 실행 기획안을 작성해 주세요.
+
+아이디어: "${q}"
+
+응답 형식 (마크다운, 한국어):
+## [기획명]
+
+**기획 개요**
+**추진 배경 및 필요성**
+**세부 실행 계획** (표 형식)
+**단계별 추진 일정** (Phase 1~3)
+**예상 기대 효과**
+**리스크 및 대응 방안**
+**소요 예산 (추정)**
+**결론 및 제언**
+
+구체적이고 실행 가능한 형태로 작성하세요. 한국어로 답변하세요.`
+};
+
+// CALL AI
+async function callGemini(type) {
+  const input = document.getElementById(`${type}-input`).value.trim();
+  if (!input) { showToast('내용을 입력해 주세요.'); return; }
+
+  const outputEl = document.getElementById(`output-${type}`);
+  const loaderEl = document.getElementById(`loader-${type}`);
+  const actionsEl = document.getElementById(`actions-${type}`);
+
+  outputEl.className = 'output-box';
+  outputEl.innerHTML = '';
+  loaderEl.classList.add('active');
+  actionsEl.style.display = 'none';
+
+  const prompt = PROMPTS[type](input);
+  const needsSources = NEEDS_SOURCES.includes(type);
+
+  try {
+    const res = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const rawText = data.content?.[0]?.text || '응답을 받지 못했습니다.';
+
+    let bodyText = rawText;
+    let sources = [];
+
+    if (needsSources) {
+      try {
+        // strip possible markdown code fences
+        const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        const parsed = JSON.parse(cleaned);
+        bodyText = parsed.body || rawText;
+        sources = parsed.sources || [];
+      } catch (e) {
+        bodyText = rawText;
+        sources = [];
+      }
+    }
+
+    outputEl.innerHTML = renderMarkdown(bodyText) + renderSources(sources);
+    actionsEl.style.display = 'flex';
+    outputEl._rawText = bodyText;
+  } catch (err) {
+    outputEl.innerHTML = `<span style="color:var(--accent)">오류가 발생했습니다: ${err.message}</span>`;
+  } finally {
+    loaderEl.classList.remove('active');
+  }
+}
+
+// SOURCES RENDERER
+function renderSources(sources) {
+  if (!sources || sources.length === 0) return '';
+  const items = sources.map((s, i) => {
+    const url = s.url && s.url.startsWith('http') ? s.url : '#';
+    const year = s.year ? ` <span style="color:var(--muted);font-size:11px">(${s.year})</span>` : '';
+    const outlet = s.outlet ? `<span class="src-outlet">${s.outlet}</span>` : '';
+    return `<div class="src-item">
+      <span class="src-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="src-content">
+        <a href="${url}" target="_blank" rel="noopener" class="src-link">${s.title || '출처'}${year}</a>
+        ${outlet}
+      </div>
+      <a href="${url}" target="_blank" rel="noopener" class="src-arrow" title="링크 열기">↗</a>
+    </div>`;
+  }).join('');
+  return `<div class="sources-block">
+    <div class="sources-header">
+      <span class="sources-icon">📎</span>
+      <span>출처 및 참고자료</span>
+      <span class="sources-count">${sources.length}건</span>
+    </div>
+    ${items}
+  </div>`;
+}
+
+// MARKDOWN RENDERER
+function renderMarkdown(text) {
+  return text
+    .replace(/^## (.+)$/gm, '<div class="md-h1">$1</div>')
+    .replace(/^### (.+)$/gm, '<div class="md-h2">$1</div>')
+    .replace(/^#### (.+)$/gm, '<div class="md-h3">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="md-bold">$1</strong>')
+    .replace(/^• (.+)$/gm, '<div class="md-bullet">• $1</div>')
+    .replace(/^\* (.+)$/gm, '<div class="md-bullet">• $1</div>')
+    .replace(/^- (.+)$/gm, '<div class="md-bullet">• $1</div>')
+    .replace(/^(\d+\. .+)$/gm, '<div style="margin:4px 0 4px 16px">$1</div>')
+    .replace(/---/g, '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+// COPY
+function copyOutput(type) {
+  const el = document.getElementById(`output-${type}`);
+  const text = el._rawText || el.innerText;
+  navigator.clipboard.writeText(text).then(() => showToast('클립보드에 복사되었습니다.'));
+}
+
+// ENTER KEY
+document.querySelectorAll('textarea').forEach(ta => {
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      const type = ta.id.replace('-input', '');
+      callGemini(type);
+    }
+  });
+});
+
+// ===== ANNUAL LEAVE =====
+let leaveData = JSON.parse(localStorage.getItem('mydesk_leave') || 'null') || {
+  total: 15,
+  remaining: 13.5,
+  history: []
+};
+
+let selectedDays = 0.5;
+
+function selectLeaveDay(d) {
+  selectedDays = d;
+  document.getElementById('toggle-half').classList.toggle('active', d === 0.5);
+  document.getElementById('toggle-full').classList.toggle('active', d === 1);
+}
+
+function saveLeave() {
+  localStorage.setItem('mydesk_leave', JSON.stringify(leaveData));
+}
+
+function renderLeave() {
+  const rem = leaveData.remaining;
+  const used = leaveData.total - rem;
+
+  const whole = Math.floor(rem);
+  const frac = rem % 1 !== 0 ? '.5' : '';
+  document.getElementById('leaveCount').innerHTML = `${whole}<span>${frac}일</span>`;
+  document.getElementById('leaveUsed').textContent = used;
+  document.getElementById('sidebarLeave').textContent = rem;
+
+  // Stat
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonthItems = leaveData.history.filter(h => {
+    const d = new Date(h.date);
+    return d.getFullYear() === thisYear && d.getMonth() === now.getMonth();
+  });
+  const thisMonthUsed = thisMonthItems.reduce((a, b) => a + b.days, 0);
+  document.getElementById('leaveStat').textContent = `이번 달 ${thisMonthUsed}일 사용 / 총 ${used}일 사용`;
+
+  // History
+  const list = document.getElementById('leaveHistoryList');
+  const count = document.getElementById('historyCount');
+  count.textContent = `${leaveData.history.length}건`;
+
+  if (leaveData.history.length === 0) {
+    list.innerHTML = '<div class="empty-history">등록된 연차 내역이 없습니다.</div>';
+    return;
+  }
+
+  const sorted = [...leaveData.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+  list.innerHTML = sorted.map((item, i) => {
+    const d = new Date(item.date + 'T00:00:00');
+    const days = ['일','월','화','수','목','금','토'];
+    const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${days[d.getDay()]})`;
+    return `<div class="history-item">
+      <div>
+        <div class="history-date">${dateStr}</div>
+        <div class="history-note">${item.note || '—'}</div>
+      </div>
+      <div style="display:flex;align-items:center">
+        <span class="history-days">-${item.days}일</span>
+        <button class="history-del" onclick="deleteLeave('${item.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addLeave() {
+  const date = document.getElementById('leaveDate').value;
+  const note = document.getElementById('leaveNote').value.trim();
+
+  if (!date) { showToast('날짜를 선택해 주세요.'); return; }
+  if (leaveData.remaining < selectedDays) {
+    showToast('잔여 연차가 부족합니다.');
+    return;
+  }
+
+  const id = Date.now().toString();
+  leaveData.history.push({ id, date, note, days: selectedDays });
+  leaveData.remaining = Math.round((leaveData.remaining - selectedDays) * 10) / 10;
+  saveLeave();
+  renderLeave();
+  document.getElementById('leaveNote').value = '';
+  showToast(`연차 ${selectedDays}일이 신청되었습니다. 잔여: ${leaveData.remaining}일`);
+}
+
+function deleteLeave(id) {
+  const item = leaveData.history.find(h => h.id === id);
+  if (!item) return;
+  leaveData.history = leaveData.history.filter(h => h.id !== id);
+  leaveData.remaining = Math.round((leaveData.remaining + item.days) * 10) / 10;
+  saveLeave();
+  renderLeave();
+  showToast(`연차 ${item.days}일이 취소되었습니다.`);
+}
+
+// TOAST
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// INIT
+renderLeave();
+</script>
+</body>
+</html>
