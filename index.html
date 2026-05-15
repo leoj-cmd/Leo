@@ -561,19 +561,37 @@
     .panel-header { padding: 16px 20px 12px; }
     .panel-title { font-size: 22px; }
     .input-zone { padding: 14px 20px; }
-    .output-zone { padding: 20px; }
+    .output-zone { padding: 16px; }
     .leave-panel { padding: 20px; }
     .leave-big { font-size: 48px; }
     .form-row { flex-direction: column; gap: 12px; }
     .leave-summary { gap: 20px; padding: 20px; }
-    .output-box { padding: 20px; }
+    .output-box { padding: 16px; font-size: 13.5px; line-height: 1.75; }
+
+    /* 모바일 마크다운 스타일 */
+    .md-h1 { font-size: 18px !important; margin: 0 0 12px !important; padding-bottom: 6px !important; }
+    .md-h2 { font-size: 15px !important; margin: 16px 0 8px !important; }
+    .md-h3 { font-size: 13px !important; margin: 12px 0 6px !important; }
+    .md-bullet { margin: 3px 0 3px 10px !important; padding-left: 10px !important; font-size: 13.5px; }
+    .md-bold { font-size: inherit; }
+
+    /* 모바일 출처 블록 */
+    .sources-block { margin-top: 20px; padding-top: 16px; }
+    .src-item { padding: 10px 12px; }
+    .src-link { font-size: 12px; }
+    .src-outlet { font-size: 10px; }
+    .sources-header { font-size: 10px; }
+
+    /* 모바일 토글 */
+    .leave-toggle { gap: 6px; }
+    .toggle-btn { font-size: 12px; padding: 10px; }
   }
 
   /* MARKDOWN-LIKE RENDERING */
-  .md-h1 { font-family: 'DM Serif Display', serif; font-size: 22px; margin: 0 0 16px; color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
-  .md-h2 { font-family: 'DM Serif Display', serif; font-size: 17px; margin: 20px 0 10px; color: var(--accent2); }
-  .md-h3 { font-size: 14px; font-weight: 600; margin: 14px 0 8px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
-  .md-bullet { margin: 4px 0 4px 16px; padding-left: 12px; border-left: 2px solid var(--border); }
+  .md-h1 { font-family: 'DM Serif Display', serif; font-size: 22px; margin: 0 0 16px; color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 8px; display: block; }
+  .md-h2 { font-family: 'DM Serif Display', serif; font-size: 17px; margin: 20px 0 10px; color: var(--accent2); display: block; }
+  .md-h3 { font-size: 14px; font-weight: 600; margin: 14px 0 8px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; display: block; }
+  .md-bullet { margin: 4px 0 4px 16px; padding-left: 12px; border-left: 2px solid var(--border); display: block; line-height: 1.7; }
   .md-bold { font-weight: 600; color: var(--accent); }
 
   /* REPORT specific */
