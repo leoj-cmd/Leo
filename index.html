@@ -935,10 +935,18 @@
 
 <script>
 // ====================================================
-// 🔑 API 설정 — 키는 localStorage에서 읽음 (GitHub에 노출 안 됨)
+// 🔑 API 설정 — OpenRouter 무료 모델 (최신순 폴백)
 // ====================================================
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const AI_MODEL = 'google/gemma-4-26b-a4b-it:free';
+
+// 최신·고성능 무료 모델 우선순위 목록 (앞에서부터 순서대로 시도)
+const FREE_MODELS = [
+  'meta-llama/llama-4-maverick:free',       // Meta Llama 4 Maverick (최신, 최고성능)
+  'deepseek/deepseek-chat-v3-0324:free',    // DeepSeek V3 (최신, 추론 강점)
+  'google/gemma-4-26b-a4b-it:free',         // Gemma 4 26B (Google 최신)
+  'mistralai/mistral-small-3.1-24b-instruct:free', // Mistral Small 3.1
+  'openrouter/free',                         // 최후 폴백: 자동 선택
+];
 
 function getApiKey() {
   return localStorage.getItem('mydesk_openrouter_key') || '';
@@ -1091,7 +1099,7 @@ body와 sources title은 한국어로 작성하세요.`,
 구체적이고 실행 가능한 형태로 작성하세요. 한국어로 답변하세요.`
 };
 
-// CALL AI
+// CALL AI — 모델 우선순위대로 시도, 실패 시 다음 모델로 폴백
 async function callGemini(type) {
   const input = document.getElementById(`${type}-input`).value.trim();
   if (!input) { showToast('내용을 입력해 주세요.'); return; }
@@ -1114,10 +1122,12 @@ async function callGemini(type) {
   const prompt = PROMPTS[type](input);
   const needsSources = NEEDS_SOURCES.includes(type);
 
-  try {
-    let res;
+  let lastError = '';
+  let rawText = '';
+
+  for (const model of FREE_MODELS) {
     try {
-      res = await fetch(OPENROUTER_URL, {
+      const res = await fetch(OPENROUTER_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1125,32 +1135,49 @@ async function callGemini(type) {
           'X-Title': 'MY DESK Assistant'
         },
         body: JSON.stringify({
-          model: AI_MODEL,
+          model,
           max_tokens: 3000,
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
         })
       });
+
+      if (!res.ok) {
+        let errDetail = '';
+        try { const e = await res.json(); errDetail = e.error?.message || res.status; } catch(_) { errDetail = res.status; }
+        lastError = `[${model}] ${errDetail}`;
+        continue; // 다음 모델 시도
+      }
+
+      const data = await res.json();
+      if (data.error) { lastError = `[${model}] ${JSON.stringify(data.error)}`; continue; }
+
+      rawText = data.choices?.[0]?.message?.content || '';
+      if (!rawText) { lastError = `[${model}] 빈 응답`; continue; }
+
+      // 성공 — 사용된 모델 표시
+      const modelShort = model.split('/').pop().replace(':free', '');
+      showToast(`✓ ${modelShort} 응답 완료`);
+      break;
+
     } catch (networkErr) {
-      throw new Error(`네트워크 연결 오류 — ${networkErr.message}`);
+      lastError = `[${model}] 네트워크 오류`;
+      continue;
     }
+  }
 
-    if (!res.ok) {
-      let errDetail = '';
-      try { const e = await res.json(); errDetail = e.error?.message || JSON.stringify(e); } catch(_) {}
-      throw new Error(`API 오류 ${res.status}: ${errDetail}`);
-    }
+  if (!rawText) {
+    outputEl.innerHTML = `<span style="color:var(--accent)">모든 모델 시도 실패: ${lastError}</span>`;
+    loaderEl.classList.remove('active');
+    return;
+  }
 
-    const data = await res.json();
-    if (data.error) throw new Error(JSON.stringify(data.error));
-    const rawText = data.choices?.[0]?.message?.content || '응답을 받지 못했습니다.';
-
+  try {
     let bodyText = rawText;
     let sources = [];
 
     if (needsSources) {
       try {
-        // strip possible markdown code fences
         const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
         const parsed = JSON.parse(cleaned);
         bodyText = parsed.body || rawText;
@@ -1164,11 +1191,11 @@ async function callGemini(type) {
     outputEl.innerHTML = renderMarkdown(bodyText) + renderSources(sources);
     actionsEl.style.display = 'flex';
     outputEl._rawText = bodyText;
-  } catch (err) {
-    outputEl.innerHTML = `<span style="color:var(--accent)">오류가 발생했습니다: ${err.message}</span>`;
-  } finally {
-    loaderEl.classList.remove('active');
+  } catch(e) {
+    outputEl.innerHTML = renderMarkdown(rawText);
   }
+
+  loaderEl.classList.remove('active');
 }
 
 // SOURCES RENDERER
