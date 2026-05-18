@@ -260,9 +260,29 @@ textarea:focus, input:focus, select:focus { border-color:var(--accent2); }
   .contact-card { padding:12px 14px; gap:10px; }
   .modal-box, .contact-modal-box { padding:20px; }
 }
-@media (max-width:400px) {
-  .stock-grid { grid-template-columns:repeat(2,1fr); }
-  .mob-label { font-size:7px; }
+/* CALENDAR */
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:8px; }
+.cal-head { text-align:center; font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); padding:4px 0; letter-spacing:.05em; }
+.cal-head:first-child { color:var(--red); }
+.cal-head:last-child { color:var(--accent2); }
+.cal-day { min-height:52px; border-radius:4px; padding:3px 4px; cursor:pointer; transition:background .1s; position:relative; background:var(--paper); border:1px solid transparent; }
+.cal-day:hover { background:var(--cream); border-color:var(--border); }
+.cal-day.other-month { opacity:.35; }
+.cal-day.today { background:rgba(192,57,43,.08); border-color:var(--accent); }
+.cal-day.today .cal-num { color:var(--accent); font-weight:700; }
+.cal-day.sunday .cal-num { color:var(--red); }
+.cal-day.saturday .cal-num { color:var(--accent2); }
+.cal-num { font-family:'Space Mono',monospace; font-size:11px; display:block; margin-bottom:2px; }
+.cal-events { display:flex; flex-direction:column; gap:1px; }
+.cal-ev { font-size:9px; border-radius:2px; padding:1px 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:white; line-height:1.4; }
+.color-dot { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all .15s; }
+.color-dot.active { border-color:var(--ink); transform:scale(1.2); }
+
+@media (max-width:768px) {
+  .cal-day { min-height:38px; padding:2px 3px; }
+  .cal-num { font-size:10px; }
+  .cal-ev { font-size:8px; }
+  .stock-grid { grid-template-columns:repeat(2,1fr) !important; }
 }
 </style>
 </head>
@@ -579,6 +599,23 @@ textarea:focus, input:focus, select:focus { border-color:var(--accent2); }
   </div>
 </div>
 
+<!-- STOCK -->
+<div class="panel" id="panel-stock">
+  <div class="panel-header">
+    <div class="panel-title">주식 · TIGER KTOP10</div>
+    <div class="panel-desc">TIGER KTOP10 ETF 구성종목 실시간 시세 (Yahoo Finance)</div>
+  </div>
+  <div class="output-zone" style="padding:20px 28px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)" id="stockUpdated2">—</div>
+      <button class="btn-secondary" onclick="loadStocks(true)" id="stockRefreshBtn">↺ 새로고침</button>
+    </div>
+    <div class="stock-grid" id="stockGrid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+      <div style="color:var(--muted);font-size:12px;padding:8px;grid-column:1/-1">로딩 중...</div>
+    </div>
+  </div>
+</div>
+
 </main>
 </div>
 
@@ -591,6 +628,7 @@ textarea:focus, input:focus, select:focus { border-color:var(--accent2); }
   <button class="mob-btn" data-panel="report" onclick="switchPanel('report')">📋<span class="mob-label">보고서</span></button>
   <button class="mob-btn" data-panel="mail" onclick="switchPanel('mail')">✉️<span class="mob-label">메일</span></button>
   <button class="mob-btn" data-panel="leave" onclick="switchPanel('leave')">📅<span class="mob-label">연차</span></button>
+  <button class="mob-btn" data-panel="stock" onclick="switchPanel('stock')">📈<span class="mob-label">주식</span></button>
   <button class="mob-btn" data-panel="contacts" onclick="switchPanel('contacts')">👥<span class="mob-label">연락처</span></button>
 </nav>
 <div class="toast" id="toast"></div>
@@ -745,25 +783,53 @@ MECE 원칙으로 소제목 나누어 논리적 구조화.
 // ============================================================
 async function callSingleModel(prompt, apiKey, modelIdx){
   const model = FREE_MODELS[modelIdx];
-  const res = await fetch(OPENROUTER_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`,'X-Title':'Leos Desk'},
-    body:JSON.stringify({model, max_tokens:3000, temperature:0.7, messages:[{role:'user',content:prompt}]})
-  });
-  if(!res.ok) throw new Error(`${model} HTTP ${res.status}`);
+  let res;
+  try {
+    res = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'X-Title': 'Leos Desk',
+        'HTTP-Referer': location.href
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 3000,
+        temperature: 0.7,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+  } catch(networkErr) {
+    throw new Error(`[${model}] 네트워크 오류`);
+  }
+
+  if (!res.ok) {
+    let detail = '';
+    try { const e = await res.json(); detail = e.error?.message || ''; } catch(_){}
+    throw new Error(`[${model}] HTTP ${res.status}${detail ? ': ' + detail.slice(0,80) : ''}`);
+  }
+
   const data = await res.json();
-  const text = data.choices?.[0]?.message?.content||'';
-  if(!text) throw new Error(`${model} 빈 응답`);
-  return {text, model};
+  if (data.error) throw new Error(`[${model}] ${data.error.message||JSON.stringify(data.error)}`);
+  const text = data.choices?.[0]?.message?.content || '';
+  if (!text) throw new Error(`[${model}] 빈 응답`);
+  return { text, model };
 }
 
 async function callWithFallback(prompt, apiKey, excludeIdx=[]){
-  for(let i=0;i<FREE_MODELS.length;i++){
-    if(excludeIdx.includes(i)) continue;
-    try{ return await callSingleModel(prompt,apiKey,i); }
-    catch(e){ console.warn(e.message); }
+  const errors = [];
+  for (let i = 0; i < FREE_MODELS.length; i++){
+    if (excludeIdx.includes(i)) continue;
+    try {
+      return await callSingleModel(prompt, apiKey, i);
+    } catch(e) {
+      errors.push(e.message);
+      console.warn(e.message);
+    }
   }
-  return null;
+  // 모든 모델 실패 시 오류 목록 반환
+  throw new Error('모든 모델 실패:\n' + errors.join('\n'));
 }
 
 function makeReviewPrompt(original, r1, m1, r2, m2, type){
@@ -803,32 +869,48 @@ async function callAI(type){
   const needsSources = NEEDS_SOURCES.includes(type);
 
   try {
-    if(msgEl) msgEl.textContent=' 모델 A 분석 중...';
+    // STEP 1: 모델 A
+    if(msgEl) msgEl.textContent = ' 모델 A 분석 중...';
     const rA = await callWithFallback(prompt, apiKey, []);
-    if(!rA) throw new Error('모든 모델 응답 실패');
-
     const usedIdx = FREE_MODELS.indexOf(rA.model);
-    if(msgEl) msgEl.textContent=` 모델 B 교차검증 중... (${rA.model.split('/').pop().replace(':free','')})`;
-    const rB = await callWithFallback(prompt, apiKey, [usedIdx]);
+    const mA = rA.model.split('/').pop().replace(':free','');
+
+    // STEP 2: 모델 B (A와 다른 모델)
+    if(msgEl) msgEl.textContent = ` 모델 B 교차검증 중... (${mA} 완료)`;
+    let rB = null;
+    try { rB = await callWithFallback(prompt, apiKey, [usedIdx]); } catch(_){}
 
     let finalText;
     if(rB){
-      if(msgEl) msgEl.textContent=' 교차검증 통합 중...';
-      const reviewPrompt = makeReviewPrompt(prompt, rA.text, rA.model.split('/')[0], rB.text, rB.model.split('/')[0], type);
-      const rF = await callWithFallback(reviewPrompt, apiKey, []);
+      // STEP 3: 교차검증 통합
+      if(msgEl) msgEl.textContent = ' 교차검증 통합 중...';
+      const mB = rB.model.split('/').pop().replace(':free','');
+      const reviewPrompt = makeReviewPrompt(prompt, rA.text, mA, rB.text, mB, type);
+      let rF = null;
+      try { rF = await callWithFallback(reviewPrompt, apiKey, []); } catch(_){}
       finalText = rF ? rF.text : rA.text;
-      const mA=rA.model.split('/').pop().replace(':free','');
-      const mB=rB.model.split('/').pop().replace(':free','');
       showToast(`✓ ${mA} × ${mB} 교차검증 완료`);
     } else {
       finalText = rA.text;
-      showToast(`⚠ 단일 모델 결과 (${rA.model.split('/').pop().replace(':free','')}) — 교차검증 불가`);
+      showToast(`✓ ${mA} 단독 완료 (교차검증 모델 없음)`);
     }
 
     renderOutput(outputEl, finalText, needsSources, type, input);
     actionsEl.style.display='flex';
   } catch(e){
-    outputEl.innerHTML=`<span style="color:var(--accent)">오류: ${e.message}</span>`;
+    // 오류 상세 표시
+    const errLines = e.message.split('\n');
+    outputEl.innerHTML = `
+      <div style="color:var(--accent);font-weight:600;margin-bottom:8px">❌ 응답 실패</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.8">
+        ${errLines.map(l=>`• ${l}`).join('<br>')}
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--ink)">
+        <strong>확인 사항:</strong><br>
+        • API 키가 올바른지 확인 (🔑 버튼)<br>
+        • OpenRouter 계정 상태 확인: <a href="https://openrouter.ai/settings/keys" target="_blank" style="color:var(--accent2)">openrouter.ai/settings/keys</a><br>
+        • 잠시 후 다시 시도해 주세요 (무료 모델 일시적 과부하)
+      </div>`;
   } finally {
     loaderEl.classList.remove('active');
   }
@@ -964,75 +1046,201 @@ document.querySelectorAll('textarea').forEach(ta=>{
 // ============================================================
 // STOCKS — TIGER KTOP10
 // ============================================================
+// ============================================================
+// STOCKS — TIGER KTOP10 실시간 (Yahoo Finance)
+// ============================================================
 const KTOP10 = [
-  {name:'삼성전자',ticker:'005930',symbol:'KRX:005930'},
-  {name:'SK하이닉스',ticker:'000660',symbol:'KRX:000660'},
-  {name:'LG에너지솔루션',ticker:'373220',symbol:'KRX:373220'},
-  {name:'삼성바이오로직스',ticker:'207940',symbol:'KRX:207940'},
-  {name:'현대차',ticker:'005380',symbol:'KRX:005380'},
-  {name:'셀트리온',ticker:'068270',symbol:'KRX:068270'},
-  {name:'기아',ticker:'000270',symbol:'KRX:000270'},
-  {name:'KB금융',ticker:'105560',symbol:'KRX:105560'},
-  {name:'POSCO홀딩스',ticker:'005490',symbol:'KRX:005490'},
-  {name:'신한지주',ticker:'055550',symbol:'KRX:055550'}
+  {name:'삼성전자',   ticker:'005930', yahoo:'005930.KS'},
+  {name:'SK하이닉스', ticker:'000660', yahoo:'000660.KS'},
+  {name:'LG에너지솔루션',ticker:'373220',yahoo:'373220.KS'},
+  {name:'삼성바이오로직스',ticker:'207940',yahoo:'207940.KS'},
+  {name:'현대차',     ticker:'005380', yahoo:'005380.KS'},
+  {name:'셀트리온',   ticker:'068270', yahoo:'068270.KS'},
+  {name:'기아',       ticker:'000270', yahoo:'000270.KS'},
+  {name:'KB금융',     ticker:'105560', yahoo:'105560.KS'},
+  {name:'POSCO홀딩스',ticker:'005490', yahoo:'005490.KS'},
+  {name:'신한지주',   ticker:'055550', yahoo:'055550.KS'}
 ];
 
-function loadStocks(){
-  const grid=document.getElementById('stockGrid');
-  grid.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;grid-column:1/-1">📊 시세 불러오는 중...</div>';
-  // Use mock data + Yahoo Finance link since direct API requires key
-  const mockData = KTOP10.map(s=>({
-    ...s,
-    price: null,
-    change: null,
-    changePct: null
-  }));
-  renderStockGrid(mockData);
-  document.getElementById('stockUpdated').textContent=`마지막 업데이트: ${new Date().toLocaleTimeString('ko-KR')} (클릭 시 상세 시세 확인)`;
+async function fetchStockPrice(yahoo) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=1d&range=2d`;
+    const res = await fetch(url, {headers:{'Accept':'application/json'}});
+    if (!res.ok) return null;
+    const data = await res.json();
+    const meta = data.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+    const price = meta.regularMarketPrice;
+    const prev  = meta.chartPreviousClose || meta.previousClose;
+    const change = price - prev;
+    const changePct = (change / prev) * 100;
+    return { price, change, changePct, currency: meta.currency };
+  } catch { return null; }
 }
 
-function renderStockGrid(stocks){
-  const grid=document.getElementById('stockGrid');
-  grid.innerHTML=stocks.map(s=>{
-    const naverUrl=`https://finance.naver.com/item/main.naver?code=${s.ticker}`;
+async function loadStocks(showLoading=false) {
+  const grid = document.getElementById('stockGrid');
+  if (!grid) return;
+  if (showLoading) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px;grid-column:1/-1">📡 실시간 시세 불러오는 중...</div>';
+    const btn = document.getElementById('stockRefreshBtn');
+    if (btn) btn.disabled = true;
+  }
+
+  const results = await Promise.all(KTOP10.map(async s => {
+    const data = await fetchStockPrice(s.yahoo);
+    return { ...s, ...data };
+  }));
+
+  const now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'});
+  const upd = document.getElementById('stockUpdated2');
+  if (upd) upd.textContent = `업데이트: ${now} KST`;
+
+  grid.innerHTML = results.map(s => {
+    const hasData = s.price != null;
+    const dir = !hasData ? 'flat' : s.change > 0 ? 'up' : s.change < 0 ? 'down' : 'flat';
+    const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '–';
+    const naverUrl = `https://finance.naver.com/item/main.naver?code=${s.ticker}`;
     return `<a href="${naverUrl}" target="_blank" style="text-decoration:none">
-      <div class="stock-item flat">
+      <div class="stock-item ${dir}">
         <div class="stock-name">${s.name}</div>
         <div class="stock-ticker">${s.ticker}</div>
-        <div class="stock-price flat" style="font-size:12px;margin:6px 0 2px;color:var(--accent2)">네이버 시세 보기 →</div>
-        <div class="stock-change flat" style="font-size:10px;color:var(--muted)">클릭하여 실시간 확인</div>
+        ${hasData
+          ? `<div class="stock-price ${dir}">${s.price.toLocaleString()}원</div>
+             <div class="stock-change ${dir}">${arrow} ${Math.abs(s.change).toLocaleString(undefined,{maximumFractionDigits:0})}원 (${s.changePct>=0?'+':''}${s.changePct.toFixed(2)}%)</div>`
+          : `<div class="stock-price flat" style="font-size:11px">시세 조회 중</div>
+             <div class="stock-change flat">네이버 확인 →</div>`
+        }
       </div>
     </a>`;
   }).join('');
+
+  const btn = document.getElementById('stockRefreshBtn');
+  if (btn) btn.disabled = false;
+}
+
+// ============================================================
+// CALENDAR
+// ============================================================
+let calDate = new Date();
+let calEvents = JSON.parse(localStorage.getItem('mydesk_events') || '[]');
+let editingEventId = null;
+let selectedColor = '#c0392b';
+
+function saveEvents() { localStorage.setItem('mydesk_events', JSON.stringify(calEvents)); }
+
+function moveMonth(d) { calDate.setMonth(calDate.getMonth() + d); renderCalendar(); }
+function goToday()    { calDate = new Date(); renderCalendar(); }
+
+function renderCalendar() {
+  const y = calDate.getFullYear(), m = calDate.getMonth();
+  document.getElementById('calMonthLabel').textContent =
+    `${y}년 ${m+1}월`;
+
+  const first = new Date(y, m, 1);
+  const last  = new Date(y, m+1, 0);
+  const startDow = first.getDay(); // 0=Sun
+  const today = new Date();
+  const todayStr = toDateStr(today);
+
+  const days = ['일','월','화','수','목','금','토'];
+  let html = '<div class="cal-grid">';
+  days.forEach((d,i) => html += `<div class="cal-head">${d}</div>`);
+
+  // prev month padding
+  for (let i = 0; i < startDow; i++) {
+    const d = new Date(y, m, -startDow + i + 1);
+    html += `<div class="cal-day other-month"><span class="cal-num">${d.getDate()}</span></div>`;
+  }
+
+  for (let d = 1; d <= last.getDate(); d++) {
+    const date = new Date(y, m, d);
+    const dateStr = toDateStr(date);
+    const dow = date.getDay();
+    const isToday = dateStr === todayStr;
+    const dayEvents = calEvents.filter(e => e.date === dateStr);
+    const cls = ['cal-day', isToday?'today':'', dow===0?'sunday':dow===6?'saturday':''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="openEventModal('${dateStr}')">
+      <span class="cal-num">${d}</span>
+      <div class="cal-events">
+        ${dayEvents.slice(0,3).map(e=>`<div class="cal-ev" style="background:${e.color||'#c0392b'}" title="${e.title}">${e.time?e.time+' ':''  }${e.title}</div>`).join('')}
+        ${dayEvents.length>3?`<div style="font-size:8px;color:var(--muted)">+${dayEvents.length-3}개</div>`:''}
+      </div>
+    </div>`;
+  }
+
+  // next month padding
+  const remaining = (7 - (startDow + last.getDate()) % 7) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-day other-month"><span class="cal-num">${i}</span></div>`;
+  }
+
+  html += '</div>';
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function openEventModal(dateStr=null, evId=null) {
+  editingEventId = evId;
+  const ev = evId ? calEvents.find(e=>e.id===evId) : null;
+  document.getElementById('eventModalTitle').textContent = evId ? '일정 수정' : '일정 추가';
+  document.getElementById('ev-date').value = ev?.date || dateStr || toDateStr(new Date());
+  document.getElementById('ev-title').value = ev?.title || '';
+  document.getElementById('ev-time').value  = ev?.time  || '';
+  selectColor(ev?.color || '#c0392b');
+  document.getElementById('eventModal').classList.add('open');
+  setTimeout(()=>document.getElementById('ev-title').focus(), 100);
+}
+
+function selectColor(c) {
+  selectedColor = c;
+  document.querySelectorAll('.color-dot').forEach(d => {
+    d.classList.toggle('active', d.dataset.color === c);
+  });
+}
+
+function saveEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  const date  = document.getElementById('ev-date').value;
+  if (!title) { showToast('일정 내용을 입력해 주세요.'); return; }
+  if (!date)  { showToast('날짜를 선택해 주세요.'); return; }
+  const ev = { id: editingEventId||Date.now().toString(), date, title,
+    time: document.getElementById('ev-time').value, color: selectedColor };
+  if (editingEventId) {
+    const idx = calEvents.findIndex(e=>e.id===editingEventId);
+    if (idx > -1) calEvents[idx] = ev;
+  } else {
+    calEvents.push(ev);
+  }
+  saveEvents();
+  closeModal('eventModal');
+  renderCalendar();
+  showToast('일정이 저장되었습니다.');
+}
+
+function deleteEvent(id) {
+  calEvents = calEvents.filter(e=>e.id!==id);
+  saveEvents(); renderCalendar();
+  showToast('일정이 삭제되었습니다.');
 }
 
 // ============================================================
 // DASHBOARD TODOS
 // ============================================================
 let todos = JSON.parse(localStorage.getItem('mydesk_todos')||'{"today":[],"week":[]}');
-
 function saveTodos(){ localStorage.setItem('mydesk_todos',JSON.stringify(todos)); }
 
 function addTodo(list){
   const input=document.getElementById(list==='today'?'todoInput':'weekInput');
-  const text=input.value.trim();
-  if(!text) return;
+  const text=input.value.trim(); if(!text) return;
   todos[list].push({id:Date.now(),text,done:false});
-  input.value='';
-  saveTodos(); renderTodos();
+  input.value=''; saveTodos(); renderTodos();
 }
-
-function toggleTodo(list,id){
-  const item=todos[list].find(t=>t.id===id);
-  if(item) item.done=!item.done;
-  saveTodos(); renderTodos();
-}
-
-function deleteTodo(list,id){
-  todos[list]=todos[list].filter(t=>t.id!==id);
-  saveTodos(); renderTodos();
-}
-
+function toggleTodo(list,id){ const item=todos[list].find(t=>t.id===id); if(item) item.done=!item.done; saveTodos(); renderTodos(); }
+function deleteTodo(list,id){ todos[list]=todos[list].filter(t=>t.id!==id); saveTodos(); renderTodos(); }
 function renderTodos(){
   ['today','week'].forEach(list=>{
     const el=document.getElementById(list==='today'?'todoList':'weekList');
@@ -1047,15 +1255,13 @@ function renderTodos(){
 }
 
 function initDashboard(){
-  const now=new Date();
-  const d=['일','월','화','수','목','금','토'];
+  const now=new Date(), d=['일','월','화','수','목','금','토'];
   document.getElementById('todayDateLabel').textContent=`${now.getMonth()+1}/${now.getDate()} (${d[now.getDay()]})`;
-  // Week range
   const mon=new Date(now); mon.setDate(now.getDate()-((now.getDay()+6)%7));
   const sun=new Date(mon); sun.setDate(mon.getDate()+6);
   document.getElementById('weekLabel').textContent=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   renderTodos();
-  loadStocks();
+  renderCalendar();
 }
 
 // ============================================================
@@ -1190,6 +1396,7 @@ window.addEventListener('load',()=>{
   initDashboard();
   renderLeave();
   renderContacts();
+  loadStocks(true); // 주식 패널 & 대시보드 공통
   const now=new Date();
   document.getElementById('todayDateLabel').textContent=`${now.getMonth()+1}/${now.getDate()}`;
 });
