@@ -639,10 +639,10 @@ textarea:focus, input:focus, select:focus { border-color:var(--accent2); }
 // ============================================================
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const FREE_MODELS = [
-  'meta-llama/llama-4-maverick:free',
-  'deepseek/deepseek-chat-v3-0324:free',
-  'google/gemma-4-26b-a4b-it:free',
-  'mistralai/mistral-small-3.1-24b-instruct:free'
+  'openrouter/free',                              // 1순위: 자동 라우터 (가장 안정적)
+  'nvidia/nemotron-3-super-120b-a12b:free',      // 2순위: NVIDIA Nemotron 3 Super
+  'openai/gpt-oss-120b:free',                    // 3순위: OpenAI OSS 120B
+  'google/gemma-4-31b-it:free',                  // 4순위: Google Gemma 4 31B
 ];
 const TODAY = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
 const THIS_YEAR = new Date().getFullYear();
@@ -790,8 +790,7 @@ async function callSingleModel(prompt, apiKey, modelIdx){
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
-        'X-Title': 'Leos Desk',
-        'HTTP-Referer': location.href
+        'X-Title': 'Leos Desk'
       },
       body: JSON.stringify({
         model,
