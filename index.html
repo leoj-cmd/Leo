@@ -260,6 +260,11 @@ textarea:focus, input:focus, select:focus { border-color:var(--accent2); }
   .contact-card { padding:12px 14px; gap:10px; }
   .modal-box, .contact-modal-box { padding:20px; }
 }
+/* PERIOD SELECTOR */
+.period-btn { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; padding:4px 10px; border:1.5px solid var(--border); border-radius:3px; background:white; color:var(--muted); cursor:pointer; transition:all .15s; letter-spacing:.03em; }
+.period-btn:hover { border-color:var(--ink); color:var(--ink); }
+.period-btn.active { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
 /* CALENDAR */
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:8px; }
 .cal-head { text-align:center; font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); padding:4px 0; letter-spacing:.05em; }
@@ -439,6 +444,13 @@ textarea:focus, input:focus, select:focus { border-color:var(--accent2); }
     <div class="panel-desc">Reuters · AP · NYT · WSJ · BBC · Guardian · Al Jazeera · Bloomberg · FT · Nikkei Asia — 최신 6개월 기준 교차검증</div>
   </div>
   <div class="input-zone">
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);align-self:center;letter-spacing:.05em">검색 기간</span>
+      <button class="period-btn active" data-period="6개월" onclick="selectPeriod(this)">6개월</button>
+      <button class="period-btn" data-period="1년" onclick="selectPeriod(this)">1년</button>
+      <button class="period-btn" data-period="3년" onclick="selectPeriod(this)">3년</button>
+      <button class="period-btn" data-period="5년" onclick="selectPeriod(this)">5년</button>
+    </div>
     <div class="input-row">
       <textarea id="news-input" rows="2" placeholder="검색 키워드 입력 후 Enter 또는 검색 버튼 클릭. 예: David Sinclair, AI 반도체, 연준 금리"></textarea>
       <button class="btn-primary" onclick="callAI('news')">검색</button>
@@ -685,14 +697,34 @@ function switchPanel(id){
 }
 
 // ============================================================
+// NEWS PERIOD SELECTOR
+// ============================================================
+let newsPeriod = '6개월';
+
+function selectPeriod(btn) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  newsPeriod = btn.dataset.period;
+}
+
+// ============================================================
 // PROMPTS
 // ============================================================
 const PROMPTS = {
-  news: q=>`당신은 글로벌 뉴스 에디터입니다. 오늘은 ${TODAY}입니다.
-키워드 "${q}"에 대해 ${THIS_YEAR}년 기준 최근 6개월 이내 최신 정보만 사용하여 분석하세요. 오래된 정보(2년 이상)는 절대 포함하지 마세요.
+  news: q => {
+    const periodMap = {
+      '6개월': { label: '최근 6개월', cutoff: '2년 이상 된 정보는 절대 포함하지 마세요.', summary: '최근 6개월' },
+      '1년':   { label: '최근 1년',   cutoff: '3년 이상 된 정보는 제외하세요.', summary: '최근 1년' },
+      '3년':   { label: '최근 3년',   cutoff: '5년 이상 된 정보는 제외하세요.', summary: '최근 3년' },
+      '5년':   { label: '최근 5년',   cutoff: '오래된 정보는 최신 정보보다 후순위로 두세요.', summary: '최근 5년' },
+    };
+    const p = periodMap[newsPeriod] || periodMap['6개월'];
+    return `당신은 글로벌 뉴스 에디터입니다. 오늘은 ${TODAY}입니다.
+키워드 "${q}"에 대해 ${p.label} 이내 정보를 중심으로 분석하세요. ${p.cutoff}
 Reuters, AP, NYT, WSJ, BBC, Guardian, Al Jazeera, Bloomberg, FT, Nikkei Asia 관점으로 분석합니다.
 반드시 아래 JSON만 출력하세요(다른 텍스트 금지):
-{"body":"## ${q} 최신 뉴스 동향 (${TODAY} 기준)\\n\\n**핵심 요약 (최근 6개월)**\\n• [날짜포함] 사실1\\n• [날짜포함] 사실2\\n• [날짜포함] 사실3\\n• [날짜포함] 사실4\\n• [날짜포함] 사실5\\n\\n**매체별 보도 관점**\\nReuters: 구체적 보도 각도\\nBloomberg: 구체적 보도 각도\\nBBC: 구체적 보도 각도\\n\\n**배경 및 맥락**\\n역사적 배경과 현재 맥락 상세 서술\\n\\n**주요 이해관계자 동향**\\n관련 기업·기관·인물 최근 움직임\\n\\n**향후 주목 포인트**\\n• 포인트1\\n• 포인트2\\n• 포인트3","sources":[{"title":"기사제목(날짜)","outlet":"매체명","url":"https://실제URL","year":"${THIS_YEAR}"}]}`,
+{"body":"## ${q} 뉴스 동향 (${TODAY} 기준 · ${p.summary})\\n\\n**핵심 요약 (${p.summary})**\\n• [날짜포함] 사실1\\n• [날짜포함] 사실2\\n• [날짜포함] 사실3\\n• [날짜포함] 사실4\\n• [날짜포함] 사실5\\n\\n**매체별 보도 관점**\\nReuters: 구체적 보도 각도\\nBloomberg: 구체적 보도 각도\\nBBC: 구체적 보도 각도\\n\\n**배경 및 맥락**\\n역사적 배경과 현재 맥락 상세 서술\\n\\n**주요 이해관계자 동향**\\n관련 기업·기관·인물 최근 움직임\\n\\n**향후 주목 포인트**\\n• 포인트1\\n• 포인트2\\n• 포인트3","sources":[{"title":"기사제목(날짜)","outlet":"매체명","url":"https://실제URL","year":"${THIS_YEAR}"}]}`;
+  },
 
   paper: q=>`당신은 의학·과학 문헌 전문가입니다. 오늘은 ${TODAY}입니다.
 키워드 "${q}"에 대해 최근 3년 이내 최신 논문 중심으로 분석하세요.
