@@ -833,21 +833,31 @@ async function callWithFallback(prompt, apiKey, excludeIdx=[]){
 
 function makeReviewPrompt(original, r1, m1, r2, m2, type){
   const isJson = NEEDS_SOURCES.includes(type);
-  return `당신은 팩트체크 전문가입니다. 두 AI(${m1}, ${m2})가 동일한 질문에 답했습니다.
+  return `당신은 팩트체크 전문가입니다. 두 AI 모델(${m1}, ${m2})이 동일한 질문에 각각 답했습니다.
 두 답변을 비교·검증하여 최종 통합 보고서를 작성하세요.
 
 검토 기준:
-1. 공통 언급 내용 → 신뢰도 높음, 반드시 포함
-2. 한쪽만 있는 내용 → 근거 명확 시 포함, 불확실 시 제외
-3. 상충 내용 → 더 구체적·최신인 쪽 채택 또는 "견해 차이" 명시
-4. 할루시네이션 의심(구체적 수치가 한쪽만, 검증 불가) → 제거
+1. 양쪽 모두 언급한 내용 → 신뢰도 높음, 반드시 포함
+2. 한쪽만 언급 → 구체적 근거 있으면 포함, 불확실하면 제외
+3. 서로 상충 → 더 구체적이고 최신인 쪽 채택, 또는 "견해 차이" 명시
+4. 구체적 수치·날짜가 한쪽에만 있고 검증 불가 → 제거 (할루시네이션 의심)
 
-원본 요청: ${original}
-${m1} 답변: ${r1}
-${m2} 답변: ${r2}
+원본 요청:
+${original.slice(0, 500)}
 
-${isJson?`원본과 동일한 JSON 형식으로만 응답(다른 텍스트 금지). body 맨 하단에 추가:\\n"\\n\\n---\\n**🔍 교차검증**: ${m1}×${m2} 공통확인 항목수개 / 제외항목수개 / 신뢰도[높음/보통/낮음]"`
-:`마크다운으로 응답. 맨 하단에 추가:\\n---\\n**🔍 교차검증**: ${m1}×${m2} 공통확인 항목수개 / 제외항목수개 / 신뢰도[높음/보통/낮음]`}`;
+${m1} 답변:
+${r1.slice(0, 1500)}
+
+${m2} 답변:
+${r2.slice(0, 1500)}
+
+${isJson
+  ? `반드시 단 하나의 JSON 객체만 출력하세요. JSON 외 텍스트 절대 금지. 두 개의 JSON 금지.
+형식: {"body":"...통합된 마크다운 내용...\\n\\n---\\n**🔍 교차검증**: 공통확인 N개 / 제외 N개 / 신뢰도 높음","sources":[{"title":"...","outlet":"...","url":"https://...","year":"2026"}]}`
+  : `마크다운으로 통합 답변을 작성하고, 마지막 줄에 아래를 추가하세요:
+---
+**🔍 교차검증**: 공통확인 N개 / 제외 N개 / 신뢰도 높음`
+}`;
 }
 
 async function callAI(type){
@@ -918,27 +928,72 @@ async function callAI(type){
 // ============================================================
 // RENDER
 // ============================================================
-function renderOutput(outputEl, rawText, needsSources, type, keyword){
-  if(type==='paper'){
-    try{
-      const cleaned=rawText.replace(/^```json\s*/i,'').replace(/```\s*$/,'').trim();
-      const parsed=JSON.parse(cleaned);
-      outputEl.innerHTML = renderMarkdown(parsed.body||rawText) + renderPaperList(parsed.papers||[], parsed.trials||[]) + renderSources(parsed.sources||[]);
-      outputEl._rawText=parsed.body||rawText;
-    } catch { outputEl.innerHTML=renderMarkdown(rawText); outputEl._rawText=rawText; }
+
+// JSON을 텍스트에서 강하게 추출 (여러 JSON, 앞뒤 텍스트 있어도 처리)
+function extractJSON(text) {
+  if (!text) return null;
+
+  // 1) 코드펜스 제거
+  let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+  // 2) 첫 번째 { 부터 마지막 } 까지만 추출
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace  = cleaned.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace === -1) return null;
+
+  // 3) 중간에 JSON이 두 개 붙어있으면 첫 번째만 추출
+  let jsonStr = cleaned.slice(firstBrace, lastBrace + 1);
+
+  // 4) 제어문자 제거 (줄바꿈 제외)
+  jsonStr = jsonStr.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+  try {
+    return JSON.parse(jsonStr);
+  } catch(_) {
+    // 5) 마지막 시도: body만 정규식으로 추출
+    const bodyMatch = text.match(/"body"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"(?:sources|papers|notes|trials)|\"\s*})/);
+    if (bodyMatch) {
+      try {
+        const body = JSON.parse(`"${bodyMatch[1]}"`);
+        return { body };
+      } catch(_) {}
+    }
+    return null;
+  }
+}
+
+function renderOutput(outputEl, rawText, needsSources, type){
+  if (!rawText) { outputEl.innerHTML = '<span style="color:var(--muted)">응답 없음</span>'; return; }
+
+  if (type === 'paper') {
+    const parsed = extractJSON(rawText);
+    if (parsed && parsed.body) {
+      outputEl.innerHTML = renderMarkdown(parsed.body)
+        + renderPaperList(parsed.papers||[], parsed.trials||[])
+        + renderSources(parsed.sources||[]);
+      outputEl._rawText = parsed.body;
+    } else {
+      outputEl.innerHTML = renderMarkdown(rawText);
+      outputEl._rawText = rawText;
+    }
     return;
   }
-  if(needsSources){
-    try{
-      const cleaned=rawText.replace(/^```json\s*/i,'').replace(/```\s*$/,'').trim();
-      const parsed=JSON.parse(cleaned);
-      outputEl.innerHTML = renderMarkdown(parsed.body||rawText) + renderSources(parsed.sources||[]);
-      outputEl._rawText=parsed.body||rawText;
-    } catch { outputEl.innerHTML=renderMarkdown(rawText); outputEl._rawText=rawText; }
+
+  if (needsSources) {
+    const parsed = extractJSON(rawText);
+    if (parsed && parsed.body) {
+      outputEl.innerHTML = renderMarkdown(parsed.body) + renderSources(parsed.sources||[]);
+      outputEl._rawText = parsed.body;
+    } else {
+      // JSON 파싱 실패 → 마크다운으로 그냥 렌더
+      outputEl.innerHTML = renderMarkdown(rawText);
+      outputEl._rawText = rawText;
+    }
     return;
   }
-  outputEl.innerHTML=renderMarkdown(rawText);
-  outputEl._rawText=rawText;
+
+  outputEl.innerHTML = renderMarkdown(rawText);
+  outputEl._rawText = rawText;
 }
 
 function renderMarkdown(text){
